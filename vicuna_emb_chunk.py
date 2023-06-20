@@ -15,6 +15,8 @@ import  requests
 from dotenv import load_dotenv
 load_dotenv()
 import os
+import time
+from tenacity import retry, stop_after_attempt, wait_fixed
 class VicunaEmbeddings(BaseModel, Embeddings):
     uid: str = None
     server_url:str = None
@@ -28,7 +30,7 @@ class VicunaEmbeddings(BaseModel, Embeddings):
     max_retries: int = 6
     """Maximum number of retries to make when generating."""
 
-
+    @retry(stop=stop_after_attempt(6), wait=wait_fixed(2))
     def _embed(self, texts: Union[List[str],str]):
         headers = {"Content-Type": "application/json"}
         if isinstance(texts, str):
@@ -50,7 +52,7 @@ class VicunaEmbeddings(BaseModel, Embeddings):
             if response.status_code != 200:
                 print(response.content)
             else:
-                print("Data formatting incorrect")
+                print("Data formatting incorrect, received server code", response.status_code, response.content, response.content==None)
 
     def _get_len_safe_embeddings(self, texts: List[str], chunk_size=None)-> List[List[float]]:
         embeddings: List[List[float]] = [[] for _ in range(len(texts))]
@@ -68,24 +70,23 @@ class VicunaEmbeddings(BaseModel, Embeddings):
                 text = text.replace("\n"," ")
                 token = tokenizer.encode(text)
                 for j in range(0, len(token), self.embedding_ctx_length):
-                    tokens.append(token[j : j + self.embedding_ctx_length])
-                    indices.append(i)
+                    tokens+=[token[j : j + self.embedding_ctx_length]]
+                    indices+=[i]
             
-                batched_embeddings = []
-                _chunk_size = chunk_size or self.chunk_size
-                for i in range(0, len(tokens), _chunk_size):
-                    decoded_tokens = [tokenizer.decode(t) for t in tokens[i : i + _chunk_size]]
-                    print(decoded_tokens)
-                    response = self._embed(
-                        texts=decoded_tokens,
-                    )
-                    batched_embeddings += [r for r in response]
+            batched_embeddings = []
+            _chunk_size = chunk_size or self.chunk_size
+            for i in range(0,len(tokens)):
+                for j in range(0,len(tokens[i]),_chunk_size):
+                    print(i,j)
+                    decoded_tokens = [tokenizer.decode(tokens[i][j:j+_chunk_size], skip_special_tokens=True)]
+                    response = self._embed(texts=decoded_tokens)
+                    batched_embeddings +=[r for r in response]
 
-                results: List[List[List[float]]] = [[] for _ in range(len(texts))]
-                lens: List[List[int]] = [[] for _ in range(len(texts))]
-                for i in range(len(indices)):
-                    results[indices[i]].append(batched_embeddings[i])
-                    lens[indices[i]].append(len(batched_embeddings[i]))
+            results: List[List[List[float]]] = [[] for _ in range(len(texts))]
+            lens: List[List[int]] = [[] for _ in range(len(texts))]
+            for i in range(len(indices)):
+                results[indices[i]].append(batched_embeddings[i])
+                lens[indices[i]].append(len(batched_embeddings[i]))
 
             for i in range(len(texts)):
                 average = np.average(results[i], axis=0, weights=lens[i])
