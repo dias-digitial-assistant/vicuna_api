@@ -40,7 +40,7 @@ class VicunaEmbeddings(BaseModel, Embeddings):
             self.server_url+"/worker_get_embeddings",
             json={
                 "input": texts,
-                "model": "vicuna-13b",
+                "model": self.model
             },
             headers=headers,
         )
