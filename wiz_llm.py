@@ -11,7 +11,7 @@ class WizardLLM(LLM):
         "max_new_tokens": min(600, 1536),
         "stop":"\n### Human:"
     }
-
+    model:str = "wiz-33b"
     server_url:str = "http://localhost:21002"
     headers = {"User-Agent": "fastchat Client"}
     @property
