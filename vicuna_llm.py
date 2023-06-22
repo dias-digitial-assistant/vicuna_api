@@ -42,6 +42,6 @@ class VicunaLLM(LLM):
         # Process the last but one chunk
         if last_but_one_chunk:
             data = json.loads(last_but_one_chunk.decode("utf-8"))
-            skip_echo_len = len(pload['prompt'].replace("</s>", " ")) + 1
-            output = data["text"][skip_echo_len:].strip()
+            #skip_echo_len = len(pload['prompt'].replace("</s>", " ")) + 1
+            output = data["text"].strip()
         return output
