@@ -24,6 +24,7 @@ class WizardLLM(LLM):
         if stop is None or len(stop) == 0:
             stop = ["\n### Human:"]
         self.pload["stop"] = stop[0]
+        self.pload["model"] = self.model
         return self.ask_chatbot_without_stream(self.pload)
 
       
