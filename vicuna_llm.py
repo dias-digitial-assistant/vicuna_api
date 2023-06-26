@@ -11,7 +11,7 @@ class VicunaLLM(LLM):
         "max_new_tokens": min(600, 1536),
         "stop":"\n### Human:"
     }
-
+    model:str = "vicuna-13b"
     server_url:str = "http://localhost:21002"
     headers = {"User-Agent": "fastchat Client"}
     @property
@@ -24,6 +24,7 @@ class VicunaLLM(LLM):
         if stop is None or len(stop) == 0:
             stop = ["\n### Human:"]
         self.pload["stop"] = stop[0]
+        self.pload["model"] = self.model
         return self.ask_chatbot_without_stream(self.pload)
 
       
