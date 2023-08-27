@@ -45,3 +45,12 @@ class WizardLLM(LLM):
             data = json.loads(last_but_one_chunk.decode("utf-8"))
             output = data["text"].strip()
         return output
+
+    def get_num_tokens(self, text: str) -> int:
+        response = requests.post(
+            self.server_url + "/count_token",
+            json=self.pload, timeout=10, headers=self.headers
+        )
+
+        response = response.json()
+        return response["count"]
